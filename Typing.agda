@@ -20,19 +20,19 @@ data _⊢_∶_ (Γ : Cxt) : Tm (dom Γ) → Typ → Set where
          ---------------------------------
          → Γ ⊢ fvar_ x ⦃ ∈-Cxt x∈Γ ⦄ ∶ F
 
-  ⊢·   : ∀ {ys e₁ e₂} {F₁} {F₂ : Ty ys}
+  ⊢app : ∀ {ys e₁ e₂} {F₁} {F₂ : Ty ys}
         → Γ ⊢ e₁ ∶ (_ , F₁ ⇒̇ F₂)     → Γ ⊢ e₂ ∶ (_ , F₁)
         ------------------------------------
         → Γ ⊢ e₁ · e₂ ∶ (_ , F₂)
 
-  ⊢ƛ   : ∀ {x ys F₁ e}{F₂ : Ty ys}
+  ⊢abs : ∀ {x ys F₁ e}{F₂ : Ty ys}
         → (x , (_ , F₁)) ∷  Γ ⊢ e ∶ (_ , F₂)
         ---------------------------------
         → Γ ⊢ ƛ (abs x e) ∶ ((_ , F₁ ⇒̇ F₂))
 
-  ⊢∀-intro : ∀ {e y ys F}
-       → Γ ⊢ e ∶ (y ∷ ys , F)
-       → Γ ⊢ e ∶ (ys , ∀̇ T.abs y F)
+  ⊢∀-intro : ∀ {e y ys}{F : Ty (y ∷ ys)}
+       → Γ ⊢ e ∶ (_ , F)
+       → Γ ⊢ e ∶ (_ , ∀̇ T.abs y F)
          
   ⊢∀-elim  : ∀ {e ys t}{F : TyBody ys}
        → Γ ⊢ e ∶ (_ , ∀̇ F)
