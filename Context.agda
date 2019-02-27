@@ -1,6 +1,8 @@
 open import Data.List
+open import Relation.Binary
+open import Relation.Binary.PropositionalEquality hiding ([_])
 
-module Context (Atom : Set)(Type : List Atom → Set) where
+module Context (Atom : Set)(_≟A_ : Decidable {A = Atom} _≡_) where
 
 open import Relation.Nullary
 open import Relation.Binary
@@ -16,64 +18,64 @@ open import Data.Empty
 
 open import Distinct
 
-open import Type Atom 
+open import Type Atom _≟A_
 
-module _ (xs : List Atom) where
+private
+  Atoms : Set
+  Atoms = List Atom
 
-  Cxt : Set
-  Cxt = List (Atom × Type xs)
+Typ : Set
+Typ = Σ[ ys ∈ Atoms ] Ty ys
 
-  dom : Cxt → List Atom
-  dom = map proj₁
+Cxt : Set
+Cxt = List (Atom × Typ)
 
-  cod : Cxt → List (Type xs)
-  cod = map proj₂
+dom : Cxt → List Atom
+dom = map proj₁
 
-  map-∈-ins : ∀ (Γ : Cxt) {x τ Δ} → x ∈ dom (Γ ++ (x , τ) ∷ Δ)
-  map-∈-ins Γ {x} {τ} {Δ}
-      rewrite map-++-commute proj₁ Γ ((x , τ) ∷ Δ) = ∈-insert (dom Γ)
+cod : Cxt → List Typ
+cod = map proj₂
+
+map-∈-ins : ∀ (Γ : Cxt) {x τ Δ} → x ∈ dom (Γ ++ (x , τ) ∷ Δ)
+map-∈-ins Γ {x} {τ} {Δ}
+  rewrite map-++-commute proj₁ Γ ((x , τ) ∷ Δ) = ∈-insert (dom Γ)
       
-  ∈-Cxt : ∀ {Γ x τ} → (x , τ) ∈ Γ → x ∈ dom Γ
-  ∈-Cxt = ∈-map⁺ proj₁
+∈-Cxt : ∀ {x τ} {Γ : Cxt} → (x , τ) ∈ Γ → x ∈ dom Γ
+∈-Cxt = ∈-map⁺ proj₁
 
-  DomDist : Cxt → Set
-  DomDist xs = Dist (dom xs)
+-- 
+DomDist : Cxt → Set
+DomDist xs = Dist (dom xs)
 
-  DomDist-rm : ∀ (Γ : Cxt) x {Δ τ}
-           → DomDist (Γ ++ (x , τ) ∷ Δ) → DomDist (Γ ++ Δ)
-  DomDist-rm Γ x {Δ} {τ} p
-    rewrite map-++-commute proj₁ Γ ((x , τ) ∷ Δ)
-          | map-++-commute proj₁ Γ Δ = Dist-rm (dom Γ) p
+DomDist-rm : ∀ (Γ : Cxt) x {Δ τ}
+          → DomDist (Γ ++ (x , τ) ∷ Δ) → DomDist (Γ ++ Δ)
+DomDist-rm Γ x {Δ} {τ} p
+ rewrite map-++-commute proj₁ Γ ((x , τ) ∷ Δ)
+       | map-++-commute proj₁ Γ Δ = Dist-rm (dom Γ) p
 
-  DomDist-ins : ∀ (Γ : Cxt) {x Δ τ}
-                 → DomDist (Γ ++ Δ)
-                 → x ∉ dom (Γ ++ Δ)
-                 → DomDist (Γ ++ (x , τ) ∷ Δ)
-  DomDist-ins Γ {x} {Δ} {τ} p x∉domΓ++Δ
-    rewrite map-++-commute proj₁ Γ Δ
-          | map-++-commute proj₁ Γ ((x , τ) ∷ Δ) = Dist-ins (dom Γ) p x∉domΓ++Δ
+DomDist-ins : ∀ (Γ : Cxt) {x Δ τ}
+              → DomDist (Γ ++ Δ)
+              → x ∉ dom (Γ ++ Δ)
+              → DomDist (Γ ++ (x , τ) ∷ Δ)
+DomDist-ins Γ {x} {Δ} {τ} p x∉domΓ++Δ
+ rewrite map-++-commute proj₁ Γ Δ
+       | map-++-commute proj₁ Γ ((x , τ) ∷ Δ) = Dist-ins (dom Γ) p x∉domΓ++Δ
 
-  Cxt-≡ : ∀ (Γ : Cxt) x {τ σ Δ} 
-            → DomDist   (Γ ++ (x , τ) ∷ Δ)
-            → (x , σ) ∈ (Γ ++ (x , τ) ∷ Δ) 
-            → σ ≡ τ
-  Cxt-≡ [] x p (here refl) = refl
-  Cxt-≡ [] x (x∉xs ∷ p) (there x∈Γ++Δ) = ⊥-elim (x∉xs (∈-map⁺ proj₁ x∈Γ++Δ))
-  Cxt-≡ (_ ∷ Γ) x {τ} {_} {Δ} (y∉xs ∷ p) (here refl)
-    rewrite map-++-commute proj₁ Γ ((x , τ) ∷ Δ) = ⊥-elim (y∉xs (∈-insert (dom Γ))) 
-  Cxt-≡ (_ ∷ Γ) x (y∉xs ∷ p) (there x∈Γ++Δ) = Cxt-≡ Γ x p x∈Γ++Δ
+DomCxt-≡ : ∀ (Γ : Cxt) x {τ σ Δ} 
+         → DomDist   (Γ ++ (x , τ) ∷ Δ)
+         → (x , σ) ∈ (Γ ++ (x , τ) ∷ Δ) 
+         → σ ≡ τ
+DomCxt-≡ [] x p (here refl) = refl
+DomCxt-≡ [] x (x∉xs ∷ p) (there x∈Γ++Δ) = ⊥-elim (x∉xs (∈-map⁺ proj₁ x∈Γ++Δ))
+DomCxt-≡ (_ ∷ Γ) x {τ} {_} {Δ} (y∉xs ∷ p) (here refl)
+ rewrite map-++-commute proj₁ Γ ((x , τ) ∷ Δ) = ⊥-elim (y∉xs (∈-insert (dom Γ))) 
+DomCxt-≡ (_ ∷ Γ) x (y∉xs ∷ p) (there x∈Γ++Δ) = DomCxt-≡ Γ x p x∈Γ++Δ
 
-  Cxt-≢ : ∀ (Γ : Cxt) x {τ Δ y σ} 
-            → DomDist (Γ ++ (x , τ) ∷ Δ) → x ≢ y
-            → (y , σ) ∈ Γ ++ (x , τ) ∷ Δ
-            → (y , σ) ∈ Γ ++ Δ
-  Cxt-≢ Γ x {τ} {Δ} p x≢y y∈Γ++x∷Δ with ∈-++⁻ Γ y∈Γ++x∷Δ
-  ... | inj₂ (here refl)   = ⊥-elim (x≢y refl)
-  ... | inj₂ (there y∈x∷Δ) = ∈-++⁺ʳ Γ y∈x∷Δ
-  ... | inj₁ y∈Γ           = ∈-++⁺ˡ y∈Γ 
-
-
-Cxt-Ty : ∀ {y ys}(f : Type ys → Type (y ∷ ys))
-       → Cxt ys → Cxt (y ∷ ys)
-Cxt-Ty f [] = []
-Cxt-Ty f ((x , τ) ∷ Γ) = (x , f τ) ∷ Cxt-Ty f Γ
+DomCxt-≢ : ∀ (Γ : Cxt) x {τ Δ y σ} 
+         → DomDist (Γ ++ (x , τ) ∷ Δ) → x ≢ y
+         → (y , σ) ∈ Γ ++ (x , τ) ∷ Δ
+         → (y , σ) ∈ Γ ++ Δ
+DomCxt-≢ Γ x {τ} {Δ} p x≢y y∈Γ++x∷Δ with ∈-++⁻ Γ y∈Γ++x∷Δ
+... | inj₂ (here refl)   = ⊥-elim (x≢y refl)
+... | inj₂ (there y∈x∷Δ) = ∈-++⁺ʳ Γ y∈x∷Δ
+... | inj₁ y∈Γ           = ∈-++⁺ˡ y∈Γ 

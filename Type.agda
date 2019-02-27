@@ -20,14 +20,14 @@ Const : Set
 Const = Atom
 
 -- the type of terms (inside formulae)
-mutual
-  RawArgs : ℕ → Atoms → Set
-  RawArgs n xs = List (RawArg n xs)
-  
-  data RawArg (n : ℕ)(xs : Atoms) : Set where
-    bvar_ : (i : Fin n)                      → RawArg n xs
-    fvar_ : (x : Atom) ⦃ _ : x ∈ xs ⦄        → RawArg n xs 
-    Con   : (K : Const) → (as : RawArgs n xs) → RawArg n xs
+data RawArg (n : ℕ)(xs : Atoms) : Set where
+  none  :                                       RawArg n xs 
+  bvar_ : (i : Fin n)                         → RawArg n xs
+  fvar_ : (x : Atom) ⦃ _ : x ∈ xs ⦄           → RawArg n xs
+  κ     : (K : Const) → (a₁ a₂ : RawArg n xs) → RawArg n xs
+
+RawArgs : ℕ → Atoms → Set
+RawArgs n xs = List (RawArg n xs)
 
 -- the type of formulae
 data RawTy (n : ℕ)(xs : Atoms) : Set where
@@ -47,6 +47,9 @@ Arg = RawArg 0
 Ty : Atoms → Set
 Ty = RawTy 0
 
+TyBody : Atoms → Set
+TyBody = RawTy 1
+
 CArg : Set
 CArg = Arg []
 
@@ -56,39 +59,39 @@ CTy = Ty []
 --
 module T {xs : Atoms} where
   private
-    {-# TERMINATING #-} 
     instArg : ∀ {n} x → RawArg (suc n) xs → RawArg n (x ∷ xs)
     instArg {n} x (bvar i) with n ≟ℕ (toℕ i)
     ... | yes p = fvar x
-    ... | no ¬p = bvar lower₁ i ¬p 
-    instArg x (fvar y)   = fvar y
-    instArg x (Con K as) = Con K (map (instArg x) as)
+    ... | no ¬p = bvar lower₁ i ¬p
+    instArg x (fvar y)  = fvar y
+    instArg x none      = none
+    instArg x (κ K a b) = κ K (instArg x a) (instArg x b)
   
   inst : ∀ {n} x → RawTy (suc n) xs → RawTy n (x ∷ xs)
   inst x (At P ts) = At P (map (instArg x) ts)
   inst x (F₁ ⇒̇ F₂) = inst x F₁ ⇒̇ inst x F₂
-  inst x (∀̇ F) = ∀̇ inst x F
+  inst x (∀̇ F)     = ∀̇ inst x F
 
   private
-    {-# TERMINATING #-}
     absArg : ∀ {n} x → RawArg n (x ∷ xs) → RawArg (suc n) xs
     absArg x (bvar i) = bvar inject₁ i
     absArg {n} x (fvar_ y ⦃ y∈x∷xs ⦄ ) with x ≟A y
     ... | yes p = bvar (fromℕ n)
     ... | no ¬p = fvar_ y ⦃ ∈-∷-≢ (λ {refl → ¬p refl}) y∈x∷xs ⦄
-    absArg x (Con K as) = Con K (map (absArg x) as)
+    absArg x none      = none
+    absArg x (κ K a b) = κ K (absArg x a) (absArg x b)
 
   abs : ∀ {n} x → RawTy n (x ∷ xs) → RawTy (suc n) xs
-  abs {n} x (At P ts) = At P (map (absArg x) ts)
+  abs x (At P ts) = At P (map (absArg x) ts)
   abs x (F ⇒̇ F₁) = abs x F ⇒̇ abs x F₁
   abs x (∀̇ F)    = ∀̇ abs x F
 
   private
-    {-# TERMINATING #-}
     _⁺arg : ∀ {n} → RawArg n xs → RawArg (suc n) xs
     (bvar i) ⁺arg = bvar inject₁ i
     (fvar x) ⁺arg = fvar x
-    Con K as ⁺arg = Con K (map _⁺arg as)
+    none ⁺arg     = none
+    κ K a b ⁺arg = κ K (a ⁺arg) (b ⁺arg)
 
   _⁺ :  ∀ {n} → RawTy n xs → RawTy (suc n) xs
   At P ts ⁺  = At P (map _⁺arg ts)
@@ -96,23 +99,28 @@ module T {xs : Atoms} where
   (∀̇ F) ⁺    = ∀̇ F ⁺
 
   private
-    {-# TERMINATING #-}
     _⁺CxtArg : ∀ {n x} → RawArg n xs → RawArg n (x ∷ xs)
     (bvar i) ⁺CxtArg = bvar i
     (fvar x) ⁺CxtArg = fvar x
-    Con K as ⁺CxtArg = Con K (map _⁺CxtArg as)
-    
+    none ⁺CxtArg     = none
+    κ K a b ⁺CxtArg = κ K (a ⁺CxtArg) (b ⁺CxtArg)
+   
   _⁺Cxt : ∀ {n x} → RawTy n xs → RawTy n (x ∷ xs)
   At P as ⁺Cxt  = At P (map _⁺CxtArg as)
   (t ⇒̇ t₁) ⁺Cxt = (t ⁺Cxt) ⇒̇ (t₁ ⁺Cxt)
   (∀̇ t) ⁺Cxt    = ∀̇ (t ⁺Cxt)
 
-  {-# TERMINATING #-}
   [_/_]arg : ∀ {n} → RawArg n xs
            → ∀ x → RawArg n (x ∷ xs) → RawArg n xs
   [ u / x ]arg (bvar i) = bvar i
   [ u / x ]arg (fvar_ y ⦃ y∈x∷xs ⦄) with x ≟A y
   ... | yes _ = u
-  ... | no ¬p = fvar_ y ⦃ ∈-∷-≢ ((λ {refl → ¬p refl})) y∈x∷xs ⦄ 
-  [ u / x ]arg (Con K as) = Con K (map ([ u / x ]arg) as)
-   
+  ... | no ¬p = fvar_ y ⦃ ∈-∷-≢ ((λ {refl → ¬p refl})) y∈x∷xs ⦄
+  [ u / x ]arg none     = none
+  [ u / x ]arg (κ K a b) = κ K ([ u / x ]arg a) ([ u / x ]arg b)
+
+  [_/_] : ∀ {n} → RawArg n xs
+          → ∀ x → RawTy n (x ∷ xs) → RawTy n xs
+  [ u / x ] (At P as) = At P (map [ u / x ]arg as)
+  [ u / x ] (t ⇒̇ t₁)  = [ u / x ] t ⇒̇ [ u / x ] t₁
+  [ u / x ] (∀̇ t)     = ∀̇ [ u ⁺arg / x ] t

@@ -8,31 +8,34 @@ open import Data.List.Membership.Propositional
 
 open import Term    Atom _≟A_
 open import Type    Atom _≟A_
+open import Context Atom _≟A_
 
-open import Context Atom Ty
+private
+  Atoms : Set
+  Atoms = List Atom
 
-data _⊢_∶_ {ys : Atoms} : (Γ : Cxt ys) → Tm (dom ys Γ) → Ty ys → Set where
+data _⊢_∶_ : (Γ : Cxt) → Tm (dom Γ) → Typ → Set where
   ⊢var : ∀ {Γ x τ}
          → (x∈Γ : (x , τ) ∈ Γ)
          ---------------------------------
-         → Γ ⊢ fvar_ x ⦃ ∈-Cxt ys  x∈Γ ⦄ ∶ τ
+         → Γ ⊢ fvar_ x ⦃ ∈-Cxt x∈Γ ⦄ ∶ τ
 
-  ⊢·   : ∀ {Γ e₁ e₂ F₁ F₂}
-        → Γ ⊢ e₁ ∶ F₁ ⇒̇ F₂     → Γ ⊢ e₂ ∶ F₁
+  ⊢·   : ∀ {Γ ys e₁ e₂} {F₁} {F₂ : Ty ys}
+        → Γ ⊢ e₁ ∶ (_ , F₁ ⇒̇ F₂)     → Γ ⊢ e₂ ∶ (_ , F₁)
         ------------------------------------
-        → Γ ⊢ e₁ · e₂ ∶ F₂
+        → Γ ⊢ e₁ · e₂ ∶ (_ , F₂)
 
-  ⊢ƛ   : ∀ {x F₁ Γ F₂ e}
-        → (x , F₁) ∷ Γ ⊢ e ∶ F₂
+  ⊢ƛ   : ∀ {x ys F₁ Γ e}{F₂ : Ty ys}
+        → (x , (_ , F₁)) ∷  Γ ⊢ e ∶ (_ , F₂)
         ---------------------------------
-        → Γ ⊢ ƛ (abs x e) ∶ F₁ ⇒̇ F₂
+        → Γ ⊢ ƛ (abs x e) ∶ ((_ , F₁ ⇒̇ F₂))
 
-  ⊢Gen : ∀ {Γ e y}{ F : Ty (y ∷ ys) }
-         → {!!} ⊢ {!!} ∶ F            -- Γ ⊢ t : F
-         → Γ ⊢ e ∶ ∀̇ T.abs y F
+  ⊢∀-intro : ∀ {Γ e y ys F}
+       → Γ ⊢ e ∶ (y ∷ ys , F)
+       → Γ ⊢ e ∶ (ys , ∀̇ T.abs y F)
          
-  ⊢∀  : ∀ {Γ e F}
-      → Γ ⊢ e ∶ ∀̇ F
-      → Γ ⊢ e ∶ {!T.inst ? F!}        -- Γ ⊢ e ∶ [ t / x ] F 
+  ⊢∀-elim  : ∀ {Γ e ys t}{F : TyBody ys}
+       → Γ ⊢ e ∶ (_ , ∀̇ F)
+       → Γ ⊢ e ∶ (_ , let z = proj₁ (fresh-gen ys) in T.[_/_] t z (T.inst z F))
 
 infix 4 _⊢_∶_

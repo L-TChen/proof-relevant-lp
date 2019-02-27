@@ -13,8 +13,9 @@ open import Data.List.Relation.Unary.Any using (here; there)
 
 open import Distinct
 
-Atoms : Set
-Atoms = List Atom
+private 
+  Atoms : Set
+  Atoms = List Atom
 
 postulate 
   fresh-gen : (xs : Atoms) → Σ[ x ∈ Atom ] (x ∉ xs)
