@@ -16,9 +16,6 @@ open import Distinct
 private 
   Atoms : Set
   Atoms = List Atom
-
-postulate 
-  fresh-gen : (xs : Atoms) → Σ[ x ∈ Atom ] (x ∉ xs)
   
 data RawTm (n : ℕ) (xs : Atoms) : Set where
   bvar_ : ∀ (i : Fin n)            → RawTm n xs
@@ -76,7 +73,9 @@ module _ {xs : Atoms} where
 
   [_/] : Tm xs → Body xs → Tm xs
   [_/] u t =  [ u / proj₁ z ] (inst (proj₁ z) t)
-    where z = fresh-gen xs
+    where
+      postulate fresh-gen : (xs : Atoms) → Σ[ x ∈ Atom ] (x ∉ xs)
+      z = fresh-gen xs
 
   _⁺Cxt : ∀ {x n} → RawTm n xs → RawTm n (x ∷ xs)
   (fvar y) ⁺Cxt  = fvar y

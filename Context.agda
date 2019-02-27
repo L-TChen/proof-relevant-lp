@@ -39,9 +39,10 @@ cod = map proj₂
 map-∈-ins : ∀ (Γ : Cxt) {x τ Δ} → x ∈ dom (Γ ++ (x , τ) ∷ Δ)
 map-∈-ins Γ {x} {τ} {Δ}
   rewrite map-++-commute proj₁ Γ ((x , τ) ∷ Δ) = ∈-insert (dom Γ)
-      
-∈-Cxt : ∀ {x τ} {Γ : Cxt} → (x , τ) ∈ Γ → x ∈ dom Γ
-∈-Cxt = ∈-map⁺ proj₁
+
+instance
+  ∈-Cxt : ∀ {x τ} {Γ : Cxt} → (x , τ) ∈ Γ → x ∈ dom Γ
+  ∈-Cxt x∈Γ = ∈-map⁺ proj₁ x∈Γ
 
 -- 
 DomDist : Cxt → Set

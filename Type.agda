@@ -9,6 +9,7 @@ open import Data.Fin
 open import Data.List
 open import Data.List.Membership.Propositional
 open import Data.List.Relation.Unary.Any using (here; there)
+open import Data.Product hiding (map)
 
 open import Distinct
 
@@ -124,3 +125,9 @@ module T {xs : Atoms} where
   [ u / x ] (At P as) = At P (map [ u / x ]arg as)
   [ u / x ] (t ⇒̇ t₁)  = [ u / x ] t ⇒̇ [ u / x ] t₁
   [ u / x ] (∀̇ t)     = ∀̇ [ u ⁺arg / x ] t
+
+  [_/] : Arg xs → TyBody xs → Ty xs
+  [_/] u t =  [ u / proj₁ z ] (inst (proj₁ z) t)
+    where
+      postulate fresh-gen : (xs : Atoms) → Σ[ x ∈ Atom ] (x ∉ xs)
+      z = fresh-gen xs

@@ -14,28 +14,28 @@ private
   Atoms : Set
   Atoms = List Atom
 
-data _⊢_∶_ : (Γ : Cxt) → Tm (dom Γ) → Typ → Set where
-  ⊢var : ∀ {Γ x τ}
-         → (x∈Γ : (x , τ) ∈ Γ)
+data _⊢_∶_ (Γ : Cxt) : Tm (dom Γ) → Typ → Set where
+  ⊢var : ∀ {x F}
+         → (x∈Γ : (x , F) ∈ Γ)
          ---------------------------------
-         → Γ ⊢ fvar_ x ⦃ ∈-Cxt x∈Γ ⦄ ∶ τ
+         → Γ ⊢ fvar_ x ⦃ ∈-Cxt x∈Γ ⦄ ∶ F
 
-  ⊢·   : ∀ {Γ ys e₁ e₂} {F₁} {F₂ : Ty ys}
+  ⊢·   : ∀ {ys e₁ e₂} {F₁} {F₂ : Ty ys}
         → Γ ⊢ e₁ ∶ (_ , F₁ ⇒̇ F₂)     → Γ ⊢ e₂ ∶ (_ , F₁)
         ------------------------------------
         → Γ ⊢ e₁ · e₂ ∶ (_ , F₂)
 
-  ⊢ƛ   : ∀ {x ys F₁ Γ e}{F₂ : Ty ys}
+  ⊢ƛ   : ∀ {x ys F₁ e}{F₂ : Ty ys}
         → (x , (_ , F₁)) ∷  Γ ⊢ e ∶ (_ , F₂)
         ---------------------------------
         → Γ ⊢ ƛ (abs x e) ∶ ((_ , F₁ ⇒̇ F₂))
 
-  ⊢∀-intro : ∀ {Γ e y ys F}
+  ⊢∀-intro : ∀ {e y ys F}
        → Γ ⊢ e ∶ (y ∷ ys , F)
        → Γ ⊢ e ∶ (ys , ∀̇ T.abs y F)
          
-  ⊢∀-elim  : ∀ {Γ e ys t}{F : TyBody ys}
+  ⊢∀-elim  : ∀ {e ys t}{F : TyBody ys}
        → Γ ⊢ e ∶ (_ , ∀̇ F)
-       → Γ ⊢ e ∶ (_ , let z = proj₁ (fresh-gen ys) in T.[_/_] t z (T.inst z F))
+       → Γ ⊢ e ∶ (_ , T.[ t /] F)
 
 infix 4 _⊢_∶_
