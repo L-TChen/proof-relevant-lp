@@ -12,10 +12,12 @@ data _↝_ {xs : Atoms} : Tm xs → Tm xs → Set where
   app  : ∀ {t : Body xs}{u : Tm xs}
          ----------------------------
          → (ƛ t) · u ↝ [ u /] t
+{-         
   appL : ∀ {t₁ t₂ u}
          → t₁ ↝ t₂
          -----------------
          → t₁ · u ↝ t₂ · u
+-}
   appR : ∀ {t u₁ u₂}
          → u₁ ↝ u₂
          -----------------
