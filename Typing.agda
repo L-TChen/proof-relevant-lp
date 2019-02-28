@@ -21,21 +21,21 @@ data _⊢_∶_ (Γ : Cxt) : Tm (dom Γ) → Typ → Set where
          → Γ ⊢ fvar_ x ⦃ ∈-Cxt x∈Γ ⦄ ∶ F
 
   ⊢app : ∀ {ys e₁ e₂} {F₁} {F₂ : Ty ys}
-        → Γ ⊢ e₁ ∶ (_ , F₁ ⇒̇ F₂)     → Γ ⊢ e₂ ∶ (_ , F₁)
+        → Γ ⊢ e₁ ∶ -, F₁ ⇒̇ F₂     → Γ ⊢ e₂ ∶ -, F₁
         ------------------------------------
-        → Γ ⊢ e₁ · e₂ ∶ (_ , F₂)
+        → Γ ⊢ e₁ · e₂ ∶ -, F₂
 
   ⊢abs : ∀ {x ys F₁ e}{F₂ : Ty ys}
-        → (x , (_ , F₁)) ∷  Γ ⊢ e ∶ (_ , F₂)
+        → (x , -, F₁) ∷  Γ ⊢ e ∶ -, F₂
         ---------------------------------
-        → Γ ⊢ ƛ (abs x e) ∶ ((_ , F₁ ⇒̇ F₂))
+        → Γ ⊢ ƛ (abs x e) ∶ -, F₁ ⇒̇ F₂
 
   ⊢∀-intro : ∀ {e y ys}{F : Ty (y ∷ ys)}
-       → Γ ⊢ e ∶ (_ , F)
-       → Γ ⊢ e ∶ (_ , ∀̇ T.abs y F)
+       → Γ ⊢ e ∶ -, F
+       → Γ ⊢ e ∶ -, ∀̇ T.abs y F
          
   ⊢∀-elim  : ∀ {e ys t}{F : TyBody ys}
-       → Γ ⊢ e ∶ (_ , ∀̇ F)
-       → Γ ⊢ e ∶ (_ , T.[ t /] F)
+       → Γ ⊢ e ∶ -, ∀̇ F
+       → Γ ⊢ e ∶ -, T.[ t /] F
 
-infix 4 _⊢_∶_
+infix 3 _⊢_∶_
