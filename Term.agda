@@ -1,12 +1,9 @@
-open import Relation.Binary
-open import Relation.Binary.PropositionalEquality
 
-module Term (Atom : Set)(_≟S_ : Decidable {A = Atom} _≡_ ) where
 
-open import Data.List
+module Term  where
+
 open import Data.Fin
-
-open import Term.Base       Atom _≟S_ public
+open import Term.Base public
 
 Ex₁ : CTm
 Ex₁ = ƛ ƛ (bvar (# 0))
