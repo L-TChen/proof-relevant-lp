@@ -41,7 +41,6 @@ data _,_,_⊢_ (Ξ : VCxt) (Ψ Γ : Cxt Ξ) : (τ : Ty Ξ) → Set where
 
 infix 10  _,_,_⊢_
 
-
 ext : (∀ {τ} → τ ∈ Γ → τ ∈ Δ)
   → (∀ {τ σ} → τ ∈ (σ ∷ Γ) → τ ∈ σ ∷ Δ)
 ext ρ (here px) = here  px
