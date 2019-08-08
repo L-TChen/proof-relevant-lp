@@ -1,3 +1,4 @@
+
 open import Data.Nat
 
 module SystemH.Type.Properties (Op At : ℕ → Set) where
@@ -117,6 +118,7 @@ module _ where
   subst-↑-ty t (τ₁ ⇒ τ₂) = cong₂ _⇒_ (subst-↑-ty t τ₁) (subst-↑-ty t τ₂)
   subst-↑-ty t (∀₁ τ)    = cong ∀₁ (subst-↑-ty (↑-tm t) τ)
 
+
 ------------------------------------------------------------------------
 -- Context properties 
 ------------------------------------------------------------------------
@@ -144,11 +146,10 @@ module _ where
   ext ρ (here px) = here  px
   ext ρ (there p) = there (ρ p)
 
-  ext-↑ : (∀ {τ : Ty Ξ} → τ ∈ Γ → τ ∈ Δ)
-    → {τ : Ty (suc Ξ)} → τ ∈ ↑ Γ → τ ∈ ↑ Δ
-  ext-↑ {Ξ = Ξ} {Γ} {Δ} ρ {τ} px =
-    subst (λ τ → τ ∈ (↑ Δ)) (sym τ=σ) (↑-∈-↑ (ρ σ∈Γ))
+  ext-↑ : (∀ {τ} → τ ∈ Γ → τ ∈ Δ)
+    → ∀ {τ} → τ ∈ ↑ Γ → τ ∈ ↑ Δ
+  ext-↑ ρ px = subst (λ τ → τ ∈ (↑ _)) (sym τ=σ) (↑-∈-↑ (ρ σ∈Γ))
     where
       pf = ∈-map⁻ ↑-ty px    
       σ∈Γ = proj₁ (proj₂ pf)
-      τ=σ = proj₂ (proj₂ pf) 
+      τ=σ = proj₂ (proj₂ pf)

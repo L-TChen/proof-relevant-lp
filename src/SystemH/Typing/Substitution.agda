@@ -62,6 +62,12 @@ subst ρ (M · N)  = subst ρ M · subst ρ N
 subst ρ (∀₀ M)   = ∀₀ (subst (exts-↑ ρ) M)
 subst ρ (M ∙ t)  = subst ρ M ∙ t
 
+exts-comp : {E : Cxt Ξ}
+  → (∀ {τ} → τ ∈ Γ → [ Ξ , Ψ ] Δ ⊢ τ)
+  → (∀ {σ} → σ ∈ Δ → [ Ξ , Ψ ] E ⊢ σ)
+  → ∀ {τ} → τ ∈ Γ → [ Ξ , Ψ ] E ⊢ τ
+exts-comp ρ₁ ρ₂ x = subst ρ₂ (ρ₁ x)
+
 _[_] : {τ₁ τ₂ : Ty Ξ}
      → [ Ξ , Ψ ] (τ₁ ∷ Γ) ⊢ τ₂
      → [ Ξ , Ψ ] Γ ⊢ τ₁
