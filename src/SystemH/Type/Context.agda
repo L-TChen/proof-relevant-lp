@@ -3,7 +3,6 @@ open import Data.Nat
 module SystemH.Type.Context (Op At : ℕ → Set) where
 
 open import Data.List
-open import Size using (Size)
 
 open import SystemH.Type.Base Op At
 
@@ -17,7 +16,7 @@ variable
 ↑ Γ = map inject₁-ty Γ
 
 -- simultaneous substitution
-[_↦_]cxt_ : (Ξ : VCxt) → Tm Ξ → Cxt (suc Ξ) → Cxt Ξ
-[ Ξ ↦ t ]cxt Γ = map ([ Ξ ↦ t ]ty_) Γ
+[0↦_]cxt_ : {Ξ : VCxt} → Tm Ξ → Cxt (suc Ξ) → Cxt Ξ 
+[0↦ t ]cxt Γ = map ([0↦ t ]ty_) Γ
 
-infix 10 [_↦_]cxt_
+infix 10 [0↦_]cxt_
