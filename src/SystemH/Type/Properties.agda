@@ -1,6 +1,6 @@
 open import Data.Nat
 
-module SystemH.Type.Properties (Op : ℕ → Set) (At : ℕ → Set) where
+module SystemH.Type.Properties (Op At : ℕ → Set) where
 
 open import Relation.Binary.PropositionalEquality
 open import Function

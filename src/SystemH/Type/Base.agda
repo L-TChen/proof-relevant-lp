@@ -1,19 +1,17 @@
 {-# OPTIONS --without-K #-}
 
 open import Data.Nat
-  renaming (_≟_ to _≟ℕ_)
 
-module SystemH.Type.Base (Op : ℕ → Set) (At : ℕ → Set) where
+module SystemH.Type.Base (Op At : ℕ → Set) where
 
-import Data.Nat.Properties as ℕₚ
+-- TODO:
+-- Use sized types
+-- Problem: `substTm` requres addition for size,
+-- otherwise it would cause some problem when proving properties of `substTm`
+
 open import Data.Vec 
 open import Data.Fin as F
-  using (Fin; zero; suc; toℕ; lower₁)
-
-open import Relation.Nullary
-
---open import Size
-open import Agda.Builtin.Size
+  using (Fin; zero; suc)
 
 private
   variable
@@ -30,16 +28,11 @@ data Tm  (Ξ : ℕ) : Set
 Tms : VCxt → ℕ → Set
 Tms Ξ n = Vec (Tm Ξ) n
 
--- TODO:
--- Use sized types
--- Problem: `substTm` requres addition for size,
--- otherwise it would cause some problem when proving properties of `substTm`
-
 data Tm Ξ where
   -- de Bruijn level variable (count from the outermost binder)
   var : (x : Fin Ξ) → Tm Ξ
   -- m-ary operation symbols
-  op  : {n : ℕ} → (σ : Op n) → (xs : Tms Ξ n) → Tm Ξ
+  op  : (σ : Op n) → (xs : Tms Ξ n) → Tm Ξ
 
 -- `Term` stands for closed terms 
 Term : Set
@@ -53,6 +46,9 @@ data Ty (Ξ : VCxt) : Set where
   _⇒_ : (τ₁ τ₂ : Ty Ξ) → Ty Ξ
   ∀₁  : (τ : Ty (suc Ξ)) → Ty Ξ
   -- ∀₁ for first-order universal quantifier
+  
+variable
+  τ : Ty Ξ
   
 {-# TERMINATING #-}
 inject₁-tm : Tm Ξ → Tm (suc Ξ)
