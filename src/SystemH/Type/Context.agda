@@ -13,10 +13,11 @@ variable
   Ψ Γ Δ : Cxt Ξ
 
 ↑_ : Cxt Ξ → Cxt (suc Ξ)
-↑ Γ = map inject₁-ty Γ
+↑ Γ = map ↑-ty Γ
 
 -- simultaneous substitution
-[0↦_]cxt_ : {Ξ : VCxt} → Tm Ξ → Cxt (suc Ξ) → Cxt Ξ 
-[0↦ t ]cxt Γ = map ([0↦ t ]ty_) Γ
+[_]cxt_ : {Ξ : VCxt} → Tm Ξ → Cxt (suc Ξ) → Cxt Ξ 
+[ t ]cxt Γ = map ([ t ]ty_) Γ
 
-infix 10 [0↦_]cxt_
+infix 8 [_]cxt_
+

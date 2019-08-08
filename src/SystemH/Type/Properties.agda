@@ -12,7 +12,7 @@ private
     n m m₁ m₂ : ℕ
 
 ------------------------------------------------------------------------
--- injectivity of inject₁, map-inject₁, inject₁-ty
+-- injectivity of ↑, map-↑, ↑-ty
 ------------------------------------------------------------------------
 
 module _ where
@@ -21,16 +21,16 @@ module _ where
   open import Data.Fin
   import Data.Fin.Properties as Fₚ
 
-  inject₁-injective : {t u : Tm Ξ}
-    → inject₁-tm t ≡ inject₁-tm u
+  ↑-injective : {t u : Tm Ξ}
+    → ↑-tm t ≡ ↑-tm u
     → t ≡ u
 
-  map-inject₁-injective : {xs ys : Tms Ξ n}
-    → map inject₁-tm xs ≡ map inject₁-tm ys
+  map-↑-injective : {xs ys : Tms Ξ n}
+    → map ↑-tm xs ≡ map ↑-tm ys
     → xs ≡ ys
 
-  inject₁-ty-injective : {σ τ : Ty Ξ}
-    → inject₁-ty σ ≡ inject₁-ty τ
+  ↑-ty-injective : {σ τ : Ty Ξ}
+    → ↑-ty σ ≡ ↑-ty τ
     → σ ≡ τ
 
   private
@@ -70,53 +70,52 @@ module _ where
       → op σ₁ xs ≡ op σ₂ ys → xs ≡ ys
     op₂ refl = refl
 
-  inject₁-injective {t = var x}      {var y}      eq = cong var (Fₚ.inject₁-injective (var₁ eq))
-  inject₁-injective {t = op σ₁ xs} {op σ₂ ys} eq with op₀ eq
-  inject₁-injective {t = op σ₁ xs} {op σ₂ ys} eq | refl =
-    cong₂ op (op₁ eq) (map-inject₁-injective (op₂ eq))
+  ↑-injective {t = var x}    {var y}    eq = cong var (Fₚ.inject₁-injective (var₁ eq))
+  ↑-injective {t = op σ₁ xs} {op σ₂ ys} eq with op₀ eq
+  ↑-injective {t = op σ₁ xs} {op σ₂ ys} eq | refl =
+    cong₂ op (op₁ eq) (map-↑-injective (op₂ eq))
 
-  map-inject₁-injective {xs = []}     {[]}     refl = refl
-  map-inject₁-injective {xs = x ∷ xs'} {y ∷ ys} eq   =
-    cong₂ _∷_ (inject₁-injective (Vₚ.∷-injectiveˡ eq)) (map-inject₁-injective (Vₚ.∷-injectiveʳ eq))
+  map-↑-injective {xs = []}      {[]}     refl = refl
+  map-↑-injective {xs = x ∷ xs'} {y ∷ ys} eq   =
+    cong₂ _∷_ (↑-injective (Vₚ.∷-injectiveˡ eq)) (map-↑-injective (Vₚ.∷-injectiveʳ eq))
 
-  inject₁-ty-injective {σ = at ψ xs} {at φ ys} eq with at₀ eq
-  ... | refl = cong₂ at (at₁ eq) (map-inject₁-injective (at₂ eq))
-  inject₁-ty-injective {σ = σ₁ ⇒ σ₂} {τ₁ ⇒ τ₂} eq =
-    cong₂ _⇒_ (inject₁-ty-injective (⇒₁ eq)) (inject₁-ty-injective (⇒₂ eq))
-  inject₁-ty-injective {σ = ∀₁ σ'}    {∀₁ τ}    eq =
-    cong ∀₁ (inject₁-ty-injective (∀₁₁ eq))
+  ↑-ty-injective {σ = at ψ xs} {at φ ys} eq with at₀ eq
+  ... | refl = cong₂ at (at₁ eq) (map-↑-injective (at₂ eq))
+  ↑-ty-injective {σ = σ₁ ⇒ σ₂} {τ₁ ⇒ τ₂} eq =
+    cong₂ _⇒_ (↑-ty-injective (⇒₁ eq)) (↑-ty-injective (⇒₂ eq))
+  ↑-ty-injective {σ = ∀₁ σ'}    {∀₁ τ}   eq =
+    cong ∀₁ (↑-ty-injective (∀₁₁ eq))
 
   ------------------------------------------------------------------------
-  -- subst-inject₁ 
+  -- subst-↑ 
   ------------------------------------------------------------------------
 
-  subst-inject₁-tm : (t : Tm Ξ) (u : Tm (suc Ξ)) 
-    → [0↦ inject₁-tm t ]tm (inject₁-tm u) ≡ inject₁-tm ([0↦ t ]tm u)
+  subst-↑-tm : (t : Tm Ξ) (u : Tm (suc Ξ)) 
+    → [ ↑-tm t ]tm (↑-tm u) ≡ ↑-tm ([ t ]tm u)
 
   {-# TERMINATING #-}
-  subst-map-inject₁-tm : (t : Tm Ξ) (xs : Tms (suc Ξ) n)
-    → map ([0↦ inject₁-tm t ]tm_) (map inject₁-tm xs) ≡ map inject₁-tm (map ([0↦ t ]tm_) xs)
+  subst-map-↑-tm : (t : Tm Ξ) (xs : Tms (suc Ξ) n)
+    → map ([ ↑-tm t ]tm_) (map ↑-tm xs) ≡ map ↑-tm (map ([ t ]tm_) xs)
 
-  subst-inject₁-tm t (var zero)    = refl
-  subst-inject₁-tm t (var (suc x)) = refl
-  subst-inject₁-tm t (op σ xs)     = cong (op σ) (subst-map-inject₁-tm t xs)
+  subst-↑-tm t (var zero)    = refl
+  subst-↑-tm t (var (suc x)) = refl
+  subst-↑-tm t (op σ xs)     = cong (op σ) (subst-map-↑-tm t xs)
 
-  subst-map-inject₁-tm t xs = begin
-    map [0↦ inject₁-tm t ]tm_ (map inject₁-tm xs)
-      ≡⟨ sym (Vₚ.map-∘ ([0↦ inject₁-tm t ]tm_) inject₁-tm xs) ⟩
-    map ([0↦ inject₁-tm t ]tm_ ∘ inject₁-tm) xs
-      ≡⟨ Vₚ.map-cong (subst-inject₁-tm t) xs ⟩
-    map (inject₁-tm ∘ [0↦ t ]tm_) xs
-      ≡⟨ Vₚ.map-∘ inject₁-tm [0↦ t ]tm_ xs  ⟩
-    map inject₁-tm (map [0↦ t ]tm_ xs)
-      ∎ 
+  subst-map-↑-tm t xs = begin
+    map [ ↑-tm t ]tm_ (map ↑-tm xs)
+      ≡⟨ sym (Vₚ.map-∘ ([ ↑-tm t ]tm_) ↑-tm xs) ⟩
+    map ([ ↑-tm t ]tm_ ∘ ↑-tm) xs
+      ≡⟨ Vₚ.map-cong (subst-↑-tm t) xs ⟩
+    map (↑-tm ∘ [ t ]tm_) xs
+      ≡⟨ Vₚ.map-∘ ↑-tm [ t ]tm_ xs  ⟩
+    map ↑-tm (map [ t ]tm_ xs)                     ∎ 
     where open ≡-Reasoning
 
-  subst-inject₁-ty : (t : Tm Ξ) (τ : Ty (suc Ξ)) 
-    → ([0↦ inject₁-tm t ]ty (inject₁-ty τ)) ≡ inject₁-ty ([0↦ t ]ty τ)
-  subst-inject₁-ty t (at φ xs) = cong (at φ) (subst-map-inject₁-tm t xs)
-  subst-inject₁-ty t (τ₁ ⇒ τ₂) = cong₂ _⇒_ (subst-inject₁-ty t τ₁) (subst-inject₁-ty t τ₂)
-  subst-inject₁-ty t (∀₁ τ)    = cong ∀₁ (subst-inject₁-ty (inject₁-tm t) τ)
+  subst-↑-ty : (t : Tm Ξ) (τ : Ty (suc Ξ)) 
+    → ([ ↑-tm t ]ty (↑-ty τ)) ≡ ↑-ty ([ t ]ty τ)
+  subst-↑-ty t (at φ xs) = cong (at φ) (subst-map-↑-tm t xs)
+  subst-↑-ty t (τ₁ ⇒ τ₂) = cong₂ _⇒_ (subst-↑-ty t τ₁) (subst-↑-ty t τ₂)
+  subst-↑-ty t (∀₁ τ)    = cong ∀₁ (subst-↑-ty (↑-tm t) τ)
 
 ------------------------------------------------------------------------
 -- Context properties 
@@ -133,11 +132,11 @@ module _ where
 
   open import SystemH.Type.Context Op At
 
-  inject₁-∈-↑ : {τ : Ty Ξ} → τ ∈ Γ → inject₁-ty τ ∈ ↑ Γ
-  inject₁-∈-↑ = ∈-map⁺ inject₁-ty
+  ↑-∈-↑ : {τ : Ty Ξ} → τ ∈ Γ → ↑-ty τ ∈ ↑ Γ
+  ↑-∈-↑ = ∈-map⁺ ↑-ty
 
-  lower₁-∈-↑ : {τ : Ty Ξ} → inject₁-ty τ ∈ (↑ Γ) → τ ∈ Γ
-  lower₁-∈-↑ {Γ = _ ∷ Γ} (here px)  = here (inject₁-ty-injective px)
+  lower₁-∈-↑ : {τ : Ty Ξ} → ↑-ty τ ∈ (↑ Γ) → τ ∈ Γ
+  lower₁-∈-↑ {Γ = _ ∷ Γ} (here px)  = here (↑-ty-injective px)
   lower₁-∈-↑ {Γ = _ ∷ Γ} (there px) = there (lower₁-∈-↑ px)
 
   ext : (∀ {τ} → τ ∈ Γ → τ ∈ Δ)
@@ -148,9 +147,8 @@ module _ where
   ext-↑ : (∀ {τ : Ty Ξ} → τ ∈ Γ → τ ∈ Δ)
     → {τ : Ty (suc Ξ)} → τ ∈ ↑ Γ → τ ∈ ↑ Δ
   ext-↑ {Ξ = Ξ} {Γ} {Δ} ρ {τ} px =
-    subst (λ τ → τ ∈ (↑ Δ)) (sym τ=σ) (inject₁-∈-↑ (ρ σ∈Γ))
+    subst (λ τ → τ ∈ (↑ Δ)) (sym τ=σ) (↑-∈-↑ (ρ σ∈Γ))
     where
-      pf = ∈-map⁻ inject₁-ty px    
-      σ  = proj₁ pf
+      pf = ∈-map⁻ ↑-ty px    
       σ∈Γ = proj₁ (proj₂ pf)
       τ=σ = proj₂ (proj₂ pf) 

@@ -24,30 +24,30 @@ rename ρ (M · N)  = rename ρ M · rename ρ N
 rename ρ (M ∙ t)  = rename ρ M ∙ t
 rename ρ (∀₀ M)   = ∀₀ (rename (ext-↑ ρ) M)
 
-inject₁-⊢ : {Γ Ψ : Cxt Ξ} 
+↑-⊢ : {Γ Ψ : Cxt Ξ} 
   → [ Ξ , Ψ ] Γ ⊢ τ
     ----------------------------------
-  → [ suc Ξ , ↑ Ψ ] ↑ Γ ⊢ inject₁-ty τ
-inject₁-⊢ (ax ψ)   = ax  (inject₁-∈-↑ ψ)
-inject₁-⊢ (var x)  = var (inject₁-∈-↑ x)
-inject₁-⊢ (ƛ M)    = ƛ inject₁-⊢ M
-inject₁-⊢ (M · M₁) = inject₁-⊢ M · inject₁-⊢ M₁
-inject₁-⊢ (∀₀ M)   = ∀₀ (inject₁-⊢ M)
-inject₁-⊢ (M ∙ t)  = ≡-subst (λ τ → [ _ , _ ] _ ⊢ τ)
-  (subst-inject₁-ty t _) (inject₁-⊢ M ∙ inject₁-tm t)
+  → [ suc Ξ , ↑ Ψ ] ↑ Γ ⊢ ↑-ty τ
+↑-⊢ (ax ψ)   = ax  (↑-∈-↑ ψ)
+↑-⊢ (var x)  = var (↑-∈-↑ x)
+↑-⊢ (ƛ M)    = ƛ ↑-⊢ M
+↑-⊢ (M · M₁) = ↑-⊢ M · ↑-⊢ M₁
+↑-⊢ (∀₀ M)   = ∀₀ (↑-⊢ M)
+↑-⊢ (M ∙ t)  = ≡-subst (λ τ → [ _ , _ ] _ ⊢ τ)
+  (subst-↑-ty t _) (↑-⊢ M ∙ ↑-tm t)
 
 exts : (∀ {τ} → τ ∈ Γ → [ Ξ , Ψ ] Δ ⊢ τ)
     -----------------------------------------
   → ∀ {τ σ} → τ ∈ σ ∷ Γ → [ Ξ , Ψ ] σ ∷ Δ ⊢ τ 
-exts σ (here refl) = var (here refl)
-exts σ (there px)  = rename there (σ px)
+exts ρ (here refl) = var (here refl)
+exts ρ (there px)  = rename there (ρ px)
 
 exts-↑ : (∀ {τ} → τ ∈ Γ → [ Ξ , Ψ ] Δ ⊢ τ)
     -----------------------------------------
   → ∀ {τ} → τ ∈ ↑ Γ → [ suc Ξ , ↑ Ψ ] ↑ Δ ⊢ τ
-exts-↑ σ τ∈Γ = ≡-subst ([ _ , _ ] _ ⊢_) (sym τ=τ′) (inject₁-⊢ (σ τ′∈Γ))
+exts-↑ ρ τ∈Γ = ≡-subst ([ _ , _ ] _ ⊢_) (sym τ=τ′) (↑-⊢ (ρ τ′∈Γ))
   where
-    pf   = ∈-map⁻ inject₁-ty τ∈Γ    
+    pf   = ∈-map⁻ ↑-ty τ∈Γ    
     τ′∈Γ = proj₁ (proj₂ pf)
     τ=τ′ = proj₂ (proj₂ pf) 
 
@@ -55,20 +55,20 @@ subst : {Γ Δ : Cxt Ξ}
       → (∀ {τ} → τ ∈ Γ → [ Ξ , Ψ ] Δ ⊢ τ)
         -------------------------------------------
       → (∀ {τ} → [ Ξ , Ψ ] Γ ⊢ τ → [ Ξ , Ψ ] Δ ⊢ τ)
-subst σ (ax x)   = ax x
-subst σ (var x)  = σ x
-subst σ (ƛ M)    = ƛ subst (exts σ) M
-subst σ (M · N)  = subst σ M · subst σ N
-subst σ (∀₀ M)   = ∀₀ (subst (exts-↑ σ) M)
-subst σ (M ∙ t)  = subst σ M ∙ t
+subst ρ (ax x)   = ax x
+subst ρ (var x)  = ρ x
+subst ρ (ƛ M)    = ƛ subst (exts ρ) M
+subst ρ (M · N)  = subst ρ M · subst ρ N
+subst ρ (∀₀ M)   = ∀₀ (subst (exts-↑ ρ) M)
+subst ρ (M ∙ t)  = subst ρ M ∙ t
 
-_[_] : {τ₁ : Ty Ξ} {τ₂ : Ty Ξ}
+_[_] : {τ₁ τ₂ : Ty Ξ}
      → [ Ξ , Ψ ] (τ₁ ∷ Γ) ⊢ τ₂
      → [ Ξ , Ψ ] Γ ⊢ τ₁
        --------------------
      → [ Ξ , Ψ ] Γ ⊢ τ₂
-_[_] {Ξ = Ξ} {Ψ = Ψ} {Γ = Γ} {τ₁} {τ₂} N M = subst σ N
+_[_] {Γ = Γ} N M = subst ρ N
   where 
-    σ : {τ : Ty Ξ} → τ ∈ τ₁ ∷ Γ → [ Ξ , Ψ ] Γ ⊢ τ
-    σ (here refl) = M
-    σ (there p)   = var p
+    ρ : τ ∈ _ ∷ Γ → [ _ , _ ] _ ⊢ τ
+    ρ (here refl) = M
+    ρ (there p)   = var p
