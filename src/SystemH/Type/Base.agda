@@ -1,141 +1,181 @@
 {-# OPTIONS --without-K #-}
 
-open import Data.Nat
+open import Data.Nat as N
 
 module SystemH.Type.Base (Op At : ℕ → Set) where
 
+open import Data.Nat.Properties as Nₚ
 open import Data.Vec as V
 open import Data.Fin as F
   hiding (_+_)
+open import Data.Empty
+
+open import Relation.Binary.PropositionalEquality
+open import Relation.Nullary
+open import Function
 open import Size
 
-private
-  variable
-    n m : ℕ
-    d   : Size
+variable
+  n m : ℕ
 
+-- variable context x₁, x₂, ⋯ , xₙ 
 VCxt : Set
-data Tm  (Ξ : ℕ) : {depth : Size} → Set
-Tms : VCxt → {d : Size} → ℕ → Set
-
 VCxt = ℕ
-Tms Ξ {d} n = Vec (Tm Ξ {d}) n
+
+data Tm (Ξ : VCxt) : {depth : Size} → Set
+data Ty (Ξ : VCxt) : {depth : Size} → Set 
+Tms Tys : VCxt → {d : Size} → ℕ → Set
+
+Tms Ξ {d} n = Fin n → Tm Ξ {d}
+Tys Ξ {d} n = Vec (Ty Ξ {d}) n
+
+Term Type : {depth : Size} → Set
+Term {d} = Tm 0 {d}
+Type {d} = Ty 0 {d}
+
+variable
+  d   : Size
+  Ξ Ξ₁ Ξ₂ Ξ₃ : VCxt
+  τ τ₁ τ₂    : Ty Ξ
+  τs τs₁ τs₂ : Tys Ξ {d} n
 
 data Tm Ξ where
   -- de Bruijn level variable (count from the outermost binder)
   var : (x : Fin Ξ) → Tm Ξ {d}
-  -- m-ary operation symbols
-  op  : (σ : Op n) → (xs : Tms Ξ {d} n) → Tm Ξ {↑ d}
+  -- n-ary operation symbols
+  op  : (K : Op n) → (xs : Tms Ξ {d} n) → Tm Ξ {↑ d}
 
-data Ty (Ξ : VCxt) : Set where
+data Ty Ξ where
   -- n-ary atomic formulas
-  at  : (φ : At n) → (xs : Tms Ξ n) → Ty Ξ
+  at  : (φ : At n) (xs : Tms Ξ n) → Ty Ξ {d}
   -- implication
-  _⇒_ : (τ₁ τ₂ : Ty Ξ) → Ty Ξ
-  ∀₁  : (τ : Ty (suc Ξ)) → Ty Ξ
-  -- ∀₁ for first-order universal quantifier
-  
-variable
-  Ξ Ξ₁ Ξ₂ Ξ₃ : VCxt
-  τ τ₁ τ₂ σ σ₁ σ₂ : Ty Ξ
+  _⇒_ : (τs : Tys Ξ {d} m) (τ : Ty Ξ {d}) → Ty Ξ {↑ d}
+  -- the first-order universal quantifier ∀₁ bind m+1 many variables
+  ∀₁  : (m : ℕ) (τ : Ty (suc m + Ξ) {d}) → Ty Ξ {↑ d}
 
--- `Term` stands for closed terms 
-Term : Set
-Term = Tm 0
-
--- `Type` stands for types without free variables
-Type : Set
-Type = Ty 0
+infix 16 _⇒_
   
 ------------------------------------------------------------------------
 -- Weakening variable context
 ------------------------------------------------------------------------
 
-↑-tm : Tm Ξ {d} → Tm (suc Ξ) {d}
-↑-tm (var x)   = var  (inject₁ x)
-↑-tm (op σ xs) = op σ (map ↑-tm xs)
+private
+  n+m+l=m+n+l : ∀ n m l → n + (m + l) ≡ m + (n + l)
+  n+m+l=m+n+l n m l = begin
+    n + (m + l)
+      ≡⟨ sym (+-assoc n m l) ⟩
+    (n + m) + l
+      ≡⟨ cong (_+ l) (+-comm n m) ⟩
+    (m + n) + l
+      ≡⟨ +-assoc m n l ⟩
+    m + (n + l)
+      ∎
+    where open ≡-Reasoning
 
-↑-ty : Ty Ξ → Ty (suc Ξ)
-↑-ty (at φ xs) = at φ (map ↑-tm xs)
-↑-ty (τ ⇒ τ₁)  = ↑-ty τ ⇒ ↑-ty τ₁
-↑-ty (∀₁ τ)    = ∀₁ (↑-ty τ)
+↑-tm : (n : ℕ) → Tm Ξ {d} → Tm (n + Ξ) {d}
+↑-tm n (var x)   = var (raise n x)
+↑-tm n (op K xs) = op K (↑-tm n ∘ xs)
+
+↑-ty : (n : ℕ) → Ty Ξ {d} → Ty (n + Ξ) {d}
+↑-ty n (at φ xs) = at φ (↑-tm n ∘ xs)
+↑-ty n (τs ⇒ τ)  = (map (↑-ty n) τs) ⇒ ↑-ty n τ
+↑-ty {Ξ} n (∀₁ m τ) with ↑-ty n τ
+... | ↑τ rewrite n+m+l=m+n+l n (suc m) Ξ = ∀₁ m ↑τ
+
+↑₁-tm : Tm Ξ {d} → Tm (suc Ξ) {d}
+↑₁-tm = ↑-tm 1 
+
+↑₁-ty : Ty Ξ {d} → Ty (suc Ξ) {d}
+↑₁-ty = ↑-ty 1 
 
 ------------------------------------------------------------------------
--- Simultaneous Substitution
+-- Renaming
 ------------------------------------------------------------------------
 
 rename-tm : (Fin Ξ₁ → Fin Ξ₂)
   → Tm Ξ₁ {d} → Tm Ξ₂ {d}
 rename-tm ρ (var x)   = var (ρ x)
-rename-tm ρ (op σ xs) = op σ (map (rename-tm ρ) xs)
+rename-tm ρ (op K xs) = op K (rename-tm ρ ∘ xs)
 
 rename-ty : (Fin Ξ₁ → Fin Ξ₂)
-  → Ty Ξ₁ → Ty Ξ₂
-rename-ty ρ (at φ xs) = at φ (map (rename-tm ρ) xs)
-rename-ty ρ (τ ⇒ τ₁)  = rename-ty ρ τ ⇒ rename-ty ρ τ₁
-rename-ty ρ (∀₁ τ)    = ∀₁ (rename-ty (F.lift 1 ρ) τ)
+  → Ty Ξ₁ {d} → Ty Ξ₂ {d}
+rename-ty ρ (at φ xs) = at φ (rename-tm ρ ∘ xs)
+rename-ty ρ (τs ⇒ τ)  = map (rename-ty ρ) τs ⇒ rename-ty ρ τ
+rename-ty ρ (∀₁ m τ)  = ∀₁ m (rename-ty (lift (suc m) ρ) τ)
 
-exts-tm : (Fin Ξ₁ → Tm Ξ₂)
-  → Fin (suc Ξ₁) → Tm (suc Ξ₂)
-exts-tm ρ 0F      = var 0F
-exts-tm ρ (suc x) = rename-tm suc (ρ x)
+exts-tm : (m : ℕ) → (Fin Ξ₁ → Tm Ξ₂)
+  → Fin (m + Ξ₁) → Tm (m + Ξ₂)
+exts-tm m σ i with toℕ i ≥? m
+exts-tm _ σ i | yes p = ↑-tm _ (σ (reduce≥ i p))
+exts-tm _ σ i | no ¬p = var (embed i ¬p)
+  where
+    embed : {m n l : ℕ} → (i : Fin (m + n))
+      → ¬ m N.≤ toℕ i → Fin (m + l)
+    embed {0F} 0F      leq    = ⊥-elim (leq z≤n)
+    embed {0F} (suc i) leq    = ⊥-elim (leq z≤n)
+    embed {suc m} 0F  _       = 0F
+    embed {suc m} (suc i) leq = suc (embed i λ m≤i → leq (s≤s m≤i))
 
-subst-tm : (Fin Ξ₁ → Tm Ξ₂)
+------------------------------------------------------------------------
+-- Decidable Equality for Substitution
+------------------------------------------------------------------------
+
+_≗-sub_ : (σ₁ σ₂ : Fin Ξ₁ → Tm Ξ₂) → Set
+σ₁ ≗-sub σ₂ = ∀ x → σ₁ x ≡ σ₂ x
+
+
+------------------------------------------------------------------------
+-- Simultaneous Substitution
+------------------------------------------------------------------------
+
+[_]tm_ : (Fin Ξ₁ → Tm Ξ₂)
   → Tm Ξ₁ {d} → Tm Ξ₂
-subst-tm ρ (var x)   = ρ x
-subst-tm ρ (op σ xs) = op σ (map (subst-tm ρ) xs)
+[ σ ]tm (var x)   = σ x
+[ σ ]tm (op K xs) = op K ([ σ ]tm_ ∘ xs)
 
-subst-ty : (Fin Ξ₁ → Tm Ξ₂)
-  → Ty Ξ₁ → Ty Ξ₂
-subst-ty ρ (at φ xs) = at φ (map (subst-tm ρ) xs)
-subst-ty ρ (τ ⇒ τ₁)  = subst-ty ρ τ ⇒ subst-ty ρ τ₁
-subst-ty ρ (∀₁ τ)    = ∀₁ (subst-ty (exts-tm ρ) τ)
-
-exts-tm-∘ : (Fin Ξ₁ → Tm Ξ₂)
-  → (Fin Ξ₂ → Tm Ξ₃)
-  → (Fin Ξ₁ → Tm Ξ₃)
-exts-tm-∘ ρ₁ ρ₂ x = subst-tm ρ₂ (ρ₁ x)
+[_]ty_ : (Fin Ξ₁ → Tm Ξ₂)
+  → Ty Ξ₁ {d} → Ty Ξ₂
+[ σ ]ty (at φ xs) = at φ ([ σ ]tm_ ∘ xs)
+[ σ ]ty (τs ⇒ τ)  = map ([ σ ]ty_ ) τs ⇒ [ σ ]ty τ
+[ σ ]ty (∀₁ m τ)  = ∀₁ m ([ exts-tm (suc m) σ ]ty τ)
 
 ------------------------------------------------------------------------
--- Substitution
+-- Substitution Composition
 ------------------------------------------------------------------------
-substTm : Tm Ξ → Tm (suc Ξ) {d} → Tm Ξ
-substTm u (var zero)    = u
-substTm u (var (suc x)) = var x
-substTm u (op σ xs)     = op σ (map (substTm u) xs)
 
-substTy : Tm Ξ → Ty (suc Ξ) → Ty Ξ
-substTy t (at φ xs) = at φ (map (substTm t) xs)
-substTy t (τ₁ ⇒ τ₂) = substTy t τ₁ ⇒ substTy t τ₂
-substTy t (∀₁ τ)    = ∀₁ (substTy (↑-tm t) τ)
+_◇_ : ∀ {n m l}
+  → (Fin m → Tm n)
+  → (Fin l → Tm m)
+  → Fin l → Tm n
+(σ₂ ◇ σ₁) x = [ σ₂ ]tm (σ₁ x)
 
-[_]tm_ : Tm Ξ → Tm (suc Ξ) → Tm Ξ
-[ u ]tm t = substTm u t
+------------------------------------------------------------------------
+-- Single Substitution
+------------------------------------------------------------------------
+single : Tm Ξ
+  → (Fin (suc Ξ) → Tm Ξ)
+single u 0F      = u
+single u (suc t) = var t
 
-[_]ty_ : Tm Ξ → Ty (suc Ξ) → Ty Ξ
-[ t ]ty u = substTy t u
+[_]₁tm_ : Tm Ξ → Tm (suc Ξ) {d} → Tm Ξ
+[_]₁tm_ u = [ single u ]tm_
+
+[_]₁ty_ : Tm Ξ → Ty (suc Ξ) {d} → Ty Ξ
+[_]₁ty_ u = [ single u ]ty_
 
 ------------------------------------------------------------------------
 -- Horn Clause
 ------------------------------------------------------------------------
-{-
+
 open import Data.Product
-  hiding (map)
 
 Horn : ℕ → Set
-Horn n = Vec (∃ At) (suc n) 
-
-to∀s : Ty n → Ty 0
-to∀s τ = {!!}
+Horn n = Fin n → ∃ At
 
 toTy : At n → Ty n
-toTy ψ = at ψ (map var (allFin _))
+toTy ψ = at ψ var
 
-to⇒ : Vec (Ty Ξ) (suc n) → Ty Ξ
-to⇒ (τ ∷ [])          = τ
-to⇒ (τ ∷ τs@(_ ∷ _)) = to⇒ τs ⇒ τ
-
+{-
 ⟦_⟧ : Horn n → Ty 0
-⟦ B ∷ [] ⟧     = {!!}
-⟦ B ∷ x ∷ As ⟧ = {!!}
+⟦ B ∷ As ⟧     = {!!}
 -}

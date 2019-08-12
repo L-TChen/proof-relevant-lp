@@ -2,22 +2,41 @@ open import Data.Nat
 
 module SystemH.Type.Context (Op At : ℕ → Set) where
 
-open import Data.List
+open import Data.Vec
+open import Data.Fin
 
 open import SystemH.Type.Base Op At
 
-Cxt : VCxt → Set
-Cxt Ξ = List (Ty Ξ)
+Cxt : VCxt → ℕ → Set
+Cxt Ξ n = Vec (Ty Ξ) n
 
+Context : ℕ → Set
+Context n = Cxt 0 n
+
+--variable
+--  Ψ Γ Δ : Cxt Ξ n
+--  Γ₁ Γ₂ Δ₁ Δ₂ : Cxt Ξ n
 variable
-  Ψ Γ Δ : Cxt Ξ
+  Ψ Γ Δ : Context n
+  Γ₁ Γ₂ Δ₁ Δ₂ : Context n
 
-↑_ : Cxt Ξ → Cxt (suc Ξ)
-↑ Γ = map ↑-ty Γ
+↑₁_ : Cxt Ξ n → Cxt (suc Ξ) n
+↑₁ Γ = map ↑₁-ty Γ
 
--- simultaneous substitution
-[_]cxt_ : {Ξ : VCxt} → Tm Ξ → Cxt (suc Ξ) → Cxt Ξ 
-[ t ]cxt Γ = map ([ t ]ty_) Γ
+------------------------------------------------------------------------
+-- Simultaneous Substitution
+------------------------------------------------------------------------
+[_]cxt_ : (Fin Ξ₁ → Tm Ξ₂)
+  → Cxt Ξ₁ n → Cxt Ξ₂ n
+[ σ ]cxt Γ = map [ σ ]ty_ Γ
+
+------------------------------------------------------------------------
+-- Single Substitution
+------------------------------------------------------------------------
+[_]₁cxt_ : Tm Ξ
+  → Cxt (suc Ξ) n → Cxt Ξ n
+[ t ]₁cxt Γ = [ single t ]cxt_ Γ
 
 infix 8 [_]cxt_
+infix 8 [_]₁cxt_
 

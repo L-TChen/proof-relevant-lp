@@ -1,43 +1,60 @@
+{-# OPTIONS --rewriting #-}
 open import Data.Nat
 
 module SystemH.Typing.Base (Op At : ℕ → Set) where
 
-open import Data.List
-open import Data.List.Membership.Propositional
-  using (_∈_) public
-  
+open import Agda.Builtin.Equality
+open import Data.Nat.Properties
+
+{-# BUILTIN REWRITE _≡_ #-}
+{-# REWRITE +-identityʳ #-}
+
+open import Data.Fin
+  hiding (_+_)
+open import Data.Vec
+  using (_∷_; _++_)
+open import Data.Vec.Membership.Propositional
+  using (_∈_)
+open import Data.Vec.Relation.Unary.All
+  using (All)
+open import Size
+
 open import SystemH.Type Op At
 
 -- Proof Evidence (Expression)
 -- `Ψ` is the context for axioms
 -- `Γ` is the context for variables
 
-data [_,_]_⊢_ (Ξ : VCxt) (Ψ Γ : Cxt Ξ) : (τ : Ty Ξ) → Set where
+data [_,_]_⊢_ (Ψ : Context n) : (d : Size) (Γ : Context m) (τ : Type) → Set where
   ax  : τ ∈ Ψ
         --------------- Axiom
-      → [ Ξ , Ψ ] Γ ⊢ τ
+      → [ Ψ , d ] Γ ⊢ τ
 
   var : τ ∈ Γ
       ----------------- Var
-      → [ Ξ , Ψ ] Γ ⊢ τ
+      → [ Ψ , d ] Γ ⊢ τ
 
-  ƛ_  : [ Ξ , Ψ ] τ ∷ Γ ⊢ σ
-        ------------------- Abs
-      → [ Ξ , Ψ ] Γ ⊢ τ ⇒ σ
+  ƛ_  : [ Ψ , d ] (τ₁ ∷ Δ) ++ Γ ⊢ τ
+        ---------------------------- Abs
+      → [ Ψ , ↑ d ] Γ ⊢ (τ₁ ∷ Δ) ⇒ τ
 
-  _·_ : [ Ξ , Ψ ] Γ ⊢ τ ⇒ σ
-      → [ Ξ , Ψ ] Γ ⊢ τ
-        ------------------- App
-      → [ Ξ , Ψ ] Γ ⊢ σ
+  _·_ : [ Ψ , d ] Γ ⊢ (τ₁ ∷ Δ) ⇒ τ₂
+      → All [ Ψ , d ] Γ ⊢_ (τ₁ ∷ Δ)
+        ---------------------------- App
+      → [ Ψ , ↑ d ] Γ ⊢ τ₂
 
-  ∀₀  : [ suc Ξ , ↑ Ψ ] ↑ Γ ⊢ τ
-        ----------------------- Gen
-      → [ Ξ , Ψ ] Γ ⊢ ∀₁ τ
+  _∙₀_ : [ Ψ , d ] Γ ⊢ ∀₁ Ξ τ
+      → (σ : Fin (suc Ξ) → Tm 0)
+        ---------------------------------- Inst₀
+      → [ Ψ , ↑ d ] Γ ⊢ [ σ ]ty τ
 
-  _∙_ : [ Ξ , Ψ ] Γ ⊢ ∀₁ τ  → (t : Tm Ξ)
-        -------------------------------- Inst
-      → [ Ξ , Ψ ] Γ ⊢ [ t ]ty τ
+  _∙₁_ : [ Ψ , d ] Γ ⊢ ∀₁ Ξ₁ τ
+      → (σ : Fin (suc Ξ₁) → Tm (suc Ξ₂))
+        ---------------------------------- Inst₁
+      → [ Ψ , ↑ d ] Γ ⊢ ∀₁ Ξ₂ ([ σ ]ty τ)
 
 infix 6 [_,_]_⊢_
+
 infix 14 _·_
-infix 16 _∙_
+infix 16 _∙₁_
+infix 16 _∙₀_
