@@ -89,8 +89,9 @@ amguTms {n = suc n} ts us acc = amguTm (ts 0F) (us 0F) acc
 mguTm  : (t u : Tm Ξ) → Maybe (AList′ Ξ)
 mguTm t u = amguTm t u []′
 
-mguAt : (φ : At n) (ts : Tms Ξ n) (ψ : At m) (us : Tms Ξ m) → Maybe (∃[ Ξ′ ] (Fin Ξ → Tm Ξ′))
-mguAt {n = n} {m = m} φ ts ψ us with n N.≟ m
+mguAt : (φ : Atom Ξ n) (ψ : Atom Ξ m)
+  → Maybe (∃[ Ξ′ ] (Fin Ξ → Tm Ξ′))
+mguAt {n = n} {m = m} (φ , ts) (ψ , us) with n N.≟ m
 ... | no _     = nothing
 ... | yes refl with φ ≟at ψ
 ... | no _  = nothing

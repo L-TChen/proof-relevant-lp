@@ -29,9 +29,6 @@ Tms Tys : VCxt → {d : Size} → ℕ → Set
 Tms Ξ {d} n = Fin n → Tm Ξ {d}
 Tys Ξ {d} n = Vec (Ty Ξ {d}) n
 
-Term Type : {depth : Size} → Set
-Term {d} = Tm 0 {d}
-Type {d} = Ty 0 {d}
 
 variable
   d   : Size
@@ -55,6 +52,14 @@ data Ty Ξ where
 
 infix 16 _⇒_
   
+Term Type : {depth : Size} → Set
+Term {d} = Tm 0 {d}
+Type {d} = Ty 0 {d}
+
+Terms Types : {depth : Size} → ℕ → Set
+Terms {d} n = Tms 0 {d} n
+Types {d} n = Tys 0 {d} n
+
 ------------------------------------------------------------------------
 -- Weakening variable context
 ------------------------------------------------------------------------
@@ -87,6 +92,16 @@ private
 
 ↑₁-ty : Ty Ξ {d} → Ty (suc Ξ) {d}
 ↑₁-ty = ↑-ty 1 
+
+inject-tm : (n : ℕ) → Tm Ξ {d} → Tm (Ξ + n) {d}
+inject-tm n (var x)   = var  (F.inject+ n x)
+inject-tm n (op K xs) = op K (inject-tm n ∘ xs)
+
+inject-ty : (n : ℕ) → Ty Ξ {d} → Ty (Ξ + n) {d}
+inject-ty n (at φ xs) = at φ (inject-tm n ∘ xs)
+inject-ty n (τs ⇒ τ)  = {!!} ⇒ inject-ty n τ
+inject-ty {Ξ} n (∀₁ m τ) with +-assoc (suc m) Ξ n
+... | eq = ∀₁ m {!+-assoc (suc m) Ξ n!}
 
 ------------------------------------------------------------------------
 -- Renaming
@@ -169,8 +184,34 @@ single u (suc t) = var t
 
 open import Data.Product
 
+fromAt : At n → Ty n
+fromAt φ = at φ var
+
+Ats : ℕ → Set
+Ats = Vec (∃ At)
+
+#vars : Ats n → VCxt
+#vars = foldr (λ _ → ℕ) (_+_ ∘ proj₁) 0 
+
+_⊹_ : Ty Ξ₁ → Tys Ξ₂ n → Tys (Ξ₁ + Ξ₂) (suc n)
+_⊹_ {Ξ₁} {Ξ₂} {n} τ τs = {!!} ∷ V.map (↑-ty Ξ₁) τs 
+
+
+fromAts : (ats : Ats n) → Tys (#vars ats) n
+fromAts []        = []
+fromAts (x ∷ ats) = {!inject≤!}
+
 Horn : ℕ → Set
-Horn n = Fin n → ∃ At
+Horn n = Fin (suc n) → ∃ At
+
+Horns : ℕ → Set
+Horns n = Vec (∃ Horn) n
+
+Atom : ℕ → ℕ → Set
+Atom Ξ n = At n × Tms Ξ n
+
+Atom′ : ℕ → Set
+Atom′ Ξ = ∃ (Atom Ξ)
 
 toTy : At n → Ty n
 toTy ψ = at ψ var
